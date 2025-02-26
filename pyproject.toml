@@ -36,6 +36,7 @@ dev = [
     "isort>=5.0.0",
     "mypy>=1.0.0",
     "ruff>=0.0.1",
+    "types-requests>=2.0.0",
 ]
 
 [tool.black]
