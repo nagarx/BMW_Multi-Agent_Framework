@@ -3,49 +3,51 @@ LLM Provider interfaces for the BMW Agents framework.
 This module provides a uniform interface to interact with various LLM APIs.
 """
 
-import os
-import json
 import logging
+import os
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Union, Any
+from typing import Any, Dict, List, Optional
 
+import ollama
 import openai
 from anthropic import Anthropic
-import ollama
 from tenacity import retry, stop_after_attempt, wait_exponential
+
 
 class LLMProvider(ABC):
     """
     Abstract base class for LLM providers.
     Provides a standard interface for interacting with different LLM APIs.
     """
-    
+
     @abstractmethod
-    async def generate(self, 
-                      messages: List[Dict[str, str]], 
-                      temperature: float = 0.7, 
-                      max_tokens: Optional[int] = None) -> Dict[str, Any]:
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
         Generate a response from the LLM based on the provided messages.
-        
+
         Args:
             messages: List of message dictionaries with 'role' and 'content' keys
             temperature: Controls randomness of the output
             max_tokens: Maximum number of tokens to generate
-            
+
         Returns:
             Dictionary with response content and metadata
         """
         pass
-    
+
     @abstractmethod
     def count_tokens(self, text: str) -> int:
         """
         Count the number of tokens in the given text.
-        
+
         Args:
             text: The input text
-            
+
         Returns:
             Number of tokens
         """
@@ -54,11 +56,11 @@ class LLMProvider(ABC):
 
 class OpenAIProvider(LLMProvider):
     """LLM provider for OpenAI models."""
-    
-    def __init__(self, model_name: str = "gpt-4", api_key: Optional[str] = None):
+
+    def __init__(self, model_name: str = "gpt-4", api_key: Optional[str] = None) -> None:
         """
         Initialize the OpenAI provider.
-        
+
         Args:
             model_name: The name of the OpenAI model to use
             api_key: OpenAI API key (if None, will try to use from environment)
@@ -69,24 +71,28 @@ class OpenAIProvider(LLMProvider):
         elif os.environ.get("OPENAI_API_KEY"):
             openai.api_key = os.environ.get("OPENAI_API_KEY")
         else:
-            raise ValueError("OpenAI API key must be provided or set as OPENAI_API_KEY environment variable")
-        
+            raise ValueError(
+                "OpenAI API key must be provided or set as OPENAI_API_KEY environment variable"
+            )
+
         self.client = openai.OpenAI()
-    
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    async def generate(self, 
-                      messages: List[Dict[str, str]], 
-                      temperature: float = 0.7, 
-                      max_tokens: Optional[int] = None) -> Dict[str, Any]:
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """Generate a response using the OpenAI API."""
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
             )
-            
+
             return {
                 "content": response.choices[0].message.content,
                 "model": self.model_name,
@@ -94,27 +100,30 @@ class OpenAIProvider(LLMProvider):
                 "usage": {
                     "prompt_tokens": response.usage.prompt_tokens,
                     "completion_tokens": response.usage.completion_tokens,
-                    "total_tokens": response.usage.total_tokens
-                }
+                    "total_tokens": response.usage.total_tokens,
+                },
             }
         except Exception as e:
             logging.error(f"Error calling OpenAI API: {str(e)}")
             raise
-    
+
     def count_tokens(self, text: str) -> int:
         """Count tokens in text using OpenAI's tiktoken."""
         import tiktoken
+
         encoding = tiktoken.encoding_for_model(self.model_name)
         return len(encoding.encode(text))
 
 
 class AnthropicProvider(LLMProvider):
     """LLM provider for Anthropic models."""
-    
-    def __init__(self, model_name: str = "claude-3-opus-20240229", api_key: Optional[str] = None):
+
+    def __init__(
+        self, model_name: str = "claude-3-opus-20240229", api_key: Optional[str] = None
+    ) -> None:
         """
         Initialize the Anthropic provider.
-        
+
         Args:
             model_name: The name of the Anthropic model to use
             api_key: Anthropic API key (if None, will try to use from environment)
@@ -125,39 +134,43 @@ class AnthropicProvider(LLMProvider):
         elif os.environ.get("ANTHROPIC_API_KEY"):
             self.api_key = os.environ.get("ANTHROPIC_API_KEY")
         else:
-            raise ValueError("Anthropic API key must be provided or set as ANTHROPIC_API_KEY environment variable")
-        
+            raise ValueError(
+                "Anthropic API key must be provided or set as ANTHROPIC_API_KEY environment variable"
+            )
+
         self.client = Anthropic(api_key=self.api_key)
-    
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    async def generate(self, 
-                      messages: List[Dict[str, str]], 
-                      temperature: float = 0.7, 
-                      max_tokens: Optional[int] = None) -> Dict[str, Any]:
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """Generate a response using the Anthropic API."""
         try:
             # Convert messages to Anthropic format if needed
             anthropic_messages = messages
-            
+
             response = self.client.messages.create(
                 model=self.model_name,
                 messages=anthropic_messages,
                 temperature=temperature,
-                max_tokens=max_tokens or 1024
+                max_tokens=max_tokens or 1024,
             )
-            
+
             return {
                 "content": response.content[0].text,
                 "model": self.model_name,
                 "usage": {
                     "input_tokens": response.usage.input_tokens,
-                    "output_tokens": response.usage.output_tokens
-                }
+                    "output_tokens": response.usage.output_tokens,
+                },
             }
         except Exception as e:
             logging.error(f"Error calling Anthropic API: {str(e)}")
             raise
-    
+
     def count_tokens(self, text: str) -> int:
         """
         Approximate token count for Anthropic models.
@@ -169,29 +182,31 @@ class AnthropicProvider(LLMProvider):
 
 class OllamaProvider(LLMProvider):
     """LLM provider for Ollama models."""
-    
-    def __init__(self, model_name: str = "deepseek-r1:14b", host: Optional[str] = None):
+
+    def __init__(self, model_name: str = "deepseek-r1:14b", host: Optional[str] = None) -> None:
         """
         Initialize the Ollama provider.
-        
+
         Args:
             model_name: The name of the Ollama model to use
             host: Ollama host address (default: http://localhost:11434)
         """
         self.model_name = model_name
         self.host = host or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-        
+
         # Initialize client with host if provided
         if self.host and self.host != "http://localhost:11434":
             ollama.set_host(self.host)
-            
+
         logging.info(f"Initialized Ollama provider with model: {model_name}, host: {self.host}")
-    
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    async def generate(self, 
-                      messages: List[Dict[str, str]], 
-                      temperature: float = 0.7, 
-                      max_tokens: Optional[int] = None) -> Dict[str, Any]:
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """Generate a response using Ollama."""
         try:
             # Log the input messages (list only first few for brevity)
@@ -199,32 +214,28 @@ class OllamaProvider(LLMProvider):
             for m in messages[:3]:  # Only show up to 3 messages
                 msg_preview.append({"role": m["role"], "content": m["content"][:100] + "..."})
             logging.debug(f"Sending messages to Ollama: {msg_preview}")
-            
+
             # Set options for generation
             options = {
                 "temperature": temperature,
             }
-            
+
             # Add max tokens if provided
             if max_tokens:
                 options["num_predict"] = max_tokens
-                
+
             # Make the API call
-            response = ollama.chat(
-                model=self.model_name,
-                messages=messages,
-                options=options
-            )
-            
+            response = ollama.chat(model=self.model_name, messages=messages, options=options)
+
             # Log the raw response for debugging (in a safer way)
-            logging.debug(f"Raw Ollama response keys: {response.keys() if hasattr(response, 'keys') else 'Not a dict'}")
-            
+            self._log_debug_response(response)
+
             # Extract the content from the response
             content = response["message"]["content"]
-            
+
             # Log the extracted content
             logging.debug(f"Extracted content: {content[:200]}...")
-            
+
             # Structure the response in a consistent format
             return {
                 "content": content,
@@ -232,20 +243,28 @@ class OllamaProvider(LLMProvider):
                 "finish_reason": "stop",  # Ollama doesn't provide finish reason
                 "usage": {
                     # Ollama doesn't provide token counts directly
-                    "prompt_tokens": self._estimate_token_count(" ".join([m["content"] for m in messages])),
+                    "prompt_tokens": self._estimate_token_count(
+                        " ".join([m["content"] for m in messages])
+                    ),
                     "completion_tokens": self._estimate_token_count(content),
-                    "total_tokens": 0  # Will be calculated below
-                }
+                    "total_tokens": 0,  # Will be calculated below
+                },
             }
         except Exception as e:
             logging.error(f"Error calling Ollama API: {str(e)}")
             raise
-    
+
+    def _log_debug_response(self, response: Any) -> None:
+        """Log debug information about the Ollama response."""
+        has_keys = hasattr(response, "keys")
+        keys_info = response.keys() if has_keys else "Not a dict"
+        logging.debug(f"Raw Ollama response keys: {keys_info}")
+
     def _estimate_token_count(self, text: str) -> int:
         """Estimate token count for Ollama models."""
         # Simple approximation: ~4 characters per token
         return len(text) // 4
-    
+
     def count_tokens(self, text: str) -> int:
         """
         Approximate token count for Ollama models.
@@ -257,11 +276,11 @@ class OllamaProvider(LLMProvider):
 def get_llm_provider(provider_name: str, model_name: Optional[str] = None) -> LLMProvider:
     """
     Factory function to get the appropriate LLM provider.
-    
+
     Args:
         provider_name: Name of the provider ('openai', 'anthropic', 'ollama')
         model_name: Specific model to use (optional)
-        
+
     Returns:
         An instance of the requested LLM provider
     """
@@ -272,4 +291,4 @@ def get_llm_provider(provider_name: str, model_name: Optional[str] = None) -> LL
     elif provider_name.lower() == "ollama":
         return OllamaProvider(model_name or "deepseek-r1:14b")
     else:
-        raise ValueError(f"Unsupported LLM provider: {provider_name}") 
+        raise ValueError(f"Unsupported LLM provider: {provider_name}")
