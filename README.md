@@ -1,3 +1,4 @@
+# BMW Multi-Agent Framework
 # BMW Agents - A Framework For Task Automation Through Multi-Agent Collaboration
 
 [![CI](https://github.com/bmwgroup/bmw-agents/actions/workflows/ci.yml/badge.svg)](https://github.com/bmwgroup/bmw-agents/actions/workflows/ci.yml)
