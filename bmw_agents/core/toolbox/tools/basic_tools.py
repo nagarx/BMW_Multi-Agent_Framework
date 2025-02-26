@@ -396,37 +396,37 @@ def create_basic_toolbox() -> Toolbox:
     toolbox = Toolbox()
 
     # Text processing tools
-    toolbox.add_tool(SimpleTool(name="text.split", function=text_split))
-    toolbox.add_tool(SimpleTool(name="text.join", function=text_join))
-    toolbox.add_tool(SimpleTool(name="text.replace", function=text_replace))
-    toolbox.add_tool(SimpleTool(name="text.regex_replace", function=text_regex_replace))
-    toolbox.add_tool(SimpleTool(name="text.extract", function=text_extract))
-    toolbox.add_tool(SimpleTool(name="text.contains", function=text_contains))
+    toolbox.add_tool(SimpleTool(name="text.split", function=text_split, description="Split text by delimiter"))
+    toolbox.add_tool(SimpleTool(name="text.join", function=text_join, description="Join text parts with delimiter"))
+    toolbox.add_tool(SimpleTool(name="text.replace", function=text_replace, description="Replace text in a string"))
+    toolbox.add_tool(SimpleTool(name="text.regex_replace", function=text_regex_replace, description="Replace text using regex pattern"))
+    toolbox.add_tool(SimpleTool(name="text.extract", function=text_extract, description="Extract text using a pattern"))
+    toolbox.add_tool(SimpleTool(name="text.contains", function=text_contains, description="Check if text contains substring"))
 
     # Math tools
-    toolbox.add_tool(SimpleTool(name="math.add", function=math_add))
-    toolbox.add_tool(SimpleTool(name="math.subtract", function=math_subtract))
-    toolbox.add_tool(SimpleTool(name="math.multiply", function=math_multiply))
-    toolbox.add_tool(SimpleTool(name="math.divide", function=math_divide))
-    toolbox.add_tool(SimpleTool(name="math.power", function=math_power))
-    toolbox.add_tool(SimpleTool(name="math.sqrt", function=math_sqrt))
+    toolbox.add_tool(SimpleTool(name="math.add", function=math_add, description="Add two numbers"))
+    toolbox.add_tool(SimpleTool(name="math.subtract", function=math_subtract, description="Subtract second number from first"))
+    toolbox.add_tool(SimpleTool(name="math.multiply", function=math_multiply, description="Multiply two numbers"))
+    toolbox.add_tool(SimpleTool(name="math.divide", function=math_divide, description="Divide first number by second"))
+    toolbox.add_tool(SimpleTool(name="math.power", function=math_power, description="Raise base to an exponent"))
+    toolbox.add_tool(SimpleTool(name="math.sqrt", function=math_sqrt, description="Calculate square root"))
 
     # Date and time tools
-    toolbox.add_tool(SimpleTool(name="datetime.now", function=datetime_now))
-    toolbox.add_tool(SimpleTool(name="datetime.format", function=datetime_format))
-    toolbox.add_tool(SimpleTool(name="datetime.add", function=datetime_add))
+    toolbox.add_tool(SimpleTool(name="datetime.now", function=datetime_now, description="Get current date and time"))
+    toolbox.add_tool(SimpleTool(name="datetime.format", function=datetime_format, description="Format date and time"))
+    toolbox.add_tool(SimpleTool(name="datetime.add", function=datetime_add, description="Add time to datetime"))
 
     # Web tools
-    toolbox.add_tool(SimpleTool(name="web.get", function=web_get))
-    toolbox.add_tool(SimpleTool(name="web.post", function=web_post))
+    toolbox.add_tool(SimpleTool(name="web.get", function=web_get, description="Make HTTP GET request"))
+    toolbox.add_tool(SimpleTool(name="web.post", function=web_post, description="Make HTTP POST request"))
 
     # JSON tools
-    toolbox.add_tool(SimpleTool(name="json.parse", function=json_parse))
-    toolbox.add_tool(SimpleTool(name="json.stringify", function=json_stringify))
+    toolbox.add_tool(SimpleTool(name="json.parse", function=json_parse, description="Parse JSON string"))
+    toolbox.add_tool(SimpleTool(name="json.stringify", function=json_stringify, description="Convert object to JSON string"))
 
     # Utility tools
-    toolbox.add_tool(SimpleTool(name="random.number", function=random_number))
-    toolbox.add_tool(SimpleTool(name="random.choice", function=random_choice))
-    toolbox.add_tool(SimpleTool(name="env.get", function=env_var))
+    toolbox.add_tool(SimpleTool(name="random.number", function=random_number, description="Generate random number"))
+    toolbox.add_tool(SimpleTool(name="random.choice", function=random_choice, description="Pick random item from list"))
+    toolbox.add_tool(SimpleTool(name="env.get", function=env_var, description="Get environment variable"))
 
     return toolbox

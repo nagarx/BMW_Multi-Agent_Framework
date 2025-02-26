@@ -98,7 +98,7 @@ class OperationTimer:
     def __init__(self, logger: logging.Logger, operation_name: str) -> None:
         self.logger = logger
         self.operation_name = operation_name
-        self.start_time = None
+        self.start_time: Optional[datetime] = None
 
     def __enter__(self) -> "OperationTimer":
         self.start_time = datetime.now()

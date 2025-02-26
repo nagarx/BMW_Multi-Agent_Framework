@@ -93,7 +93,7 @@ class PromptStrategy(ABC):
             raise ValueError("Either template_path or template_content must be provided")
 
         # Storage for conversation history
-        self.messages = []
+        self.messages: List[Message] = []
 
     def add_system_message(self, content: str) -> None:
         """

@@ -42,7 +42,7 @@ class TracedPlanReAct(TracedReAct):
         super().__init__(llm_provider, tools, template_path, max_iterations, termination_sequence)
 
         # Track plans
-        self.plans = []
+        self.plans: List[str] = []
 
     async def run(self, instruction: str) -> Dict[str, Any]:
         """

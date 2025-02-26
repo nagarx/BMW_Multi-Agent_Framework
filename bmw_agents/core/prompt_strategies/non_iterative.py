@@ -4,13 +4,13 @@ This module implements a simple one-off strategy for LLM calls.
 """
 
 import json
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Coroutine
 
 from bmw_agents.core.prompt_strategies.base import PromptStrategy
 from bmw_agents.utils.llm_providers import LLMProvider
 from bmw_agents.utils.logger import get_logger
 
-logger = get_logger("prompt_strategies.non_iterative")
+logger = get_logger(__name__)
 
 
 class NonIterativePromptStrategy(PromptStrategy):
@@ -126,62 +126,79 @@ class JSONPromptStrategy(NonIterativePromptStrategy):
         self.schema = schema
         self.retries = retries
 
-    async def execute(self, instruction: str, **kwargs: Any) -> Dict[str, Any]:
+    async def execute(self, instruction: str, **kwargs: Any) -> str:
         """
         Execute the prompt strategy with the given instruction.
 
-        This overrides the parent method to return a dictionary instead of a string.
+        This overrides the parent method to process JSON responses.
 
         Args:
-            instruction: The instruction/query to process
-            **kwargs: Additional variables for the template
+            instruction: The instruction to execute
+            **kwargs: Additional arguments to pass to the template renderer
 
         Returns:
-            Parsed JSON response as a dictionary
+            A JSON string containing the parsed response
         """
-        # Attempt to get a valid JSON response with retries
-        for attempt in range(self.retries + 1):
-            try:
-                # Call the parent's execute method to get the raw response
-                result_str = await super().execute(instruction, **kwargs)
+        # Add the instruction as a user message
+        self.add_user_message(instruction)
 
-                # Try to parse as JSON
-                result_json = json.loads(result_str)
+        # Render the template and get the LLM response
+        response = await self.get_llm_response(**kwargs)
+        
+        # Process the response
+        result = self._parse_json_response(response)
+        
+        # Convert result to JSON string and return
+        return json.dumps(result)
 
-                # Validate against schema if provided
-                if self.schema:
-                    # TODO: Implement schema validation
-                    pass
-
-                return result_json
-
-            except json.JSONDecodeError as e:
-                if attempt < self.retries:
-                    logger.warning(
-                        f"Failed to parse JSON (attempt {attempt+1}/{self.retries+1}): {e}"
-                    )
-                    # Provide feedback and retry
-                    self.add_user_message(
-                        "Your response was not valid JSON. Please provide a response in proper JSON format."
-                    )
-                else:
-                    logger.error(f"Failed to parse JSON after {self.retries+1} attempts: {e}")
-                    raise
+    def _parse_json_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Parse and validate the JSON response.
+        
+        Args:
+            response: The response from the LLM
+            
+        Returns:
+            The parsed JSON response
+        """
+        try:
+            result_str = super().post_process(response)
+            result_json = json.loads(result_str)
+            
+            # Validate against schema if provided
+            if self.schema:
+                # TODO: Implement schema validation
+                pass
+                
+            return result_json
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON: {e}")
+            raise
 
     def post_process(self, response: Dict[str, Any]) -> str:
         """
-        Process the response from the LLM.
-
-        For the JSON strategy, we just return the raw content and handle JSON
-        parsing in the execute method.
+        Process the LLM response for verification.
 
         Args:
             response: The raw response from the LLM
 
         Returns:
-            Raw content string
+            The verification result as a string ("true" or "false")
         """
-        return response["content"]
+        # Extract the content from the response
+        content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+        # Look for indications of verification success
+        lowercase_content = content.lower()
+        verified = (
+            "verified" in lowercase_content
+            or "verification passed" in lowercase_content
+            or "passes verification" in lowercase_content
+            or "yes" in lowercase_content
+        )
+
+        # Return as string to match parent class return type
+        return "true" if verified else "false"
 
 
 class PlannerPromptStrategy(JSONPromptStrategy):
@@ -240,31 +257,27 @@ class VerifierPromptStrategy(NonIterativePromptStrategy):
         """
         super().__init__(llm_provider, template_path=template_path)
 
-    def post_process(self, response: Dict[str, Any]) -> bool:
+    def post_process(self, response: Dict[str, Any]) -> str:
         """
-        Process the response from the LLM and convert it to a boolean.
+        Process the LLM response and determine if verification passes.
 
         Args:
             response: The raw response from the LLM
 
         Returns:
-            Boolean indicating verification success
+            String indicating verification result ("true" or "false")
         """
-        content = response["content"].lower().strip()
+        # Extract the content from the response
+        content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-        # Look for positive indicators
-        if "yes" in content or "true" in content or "verified" in content or "success" in content:
-            return True
+        # Look for indications of verification success
+        lowercase_content = content.lower()
+        verified = (
+            "verified" in lowercase_content
+            or "verification passed" in lowercase_content
+            or "passes verification" in lowercase_content
+            or "yes" in lowercase_content
+        )
 
-        # Look for negative indicators
-        elif (
-            "no" in content
-            or "false" in content
-            or "not verified" in content
-            or "failure" in content
-        ):
-            return False
-
-        # If we can't determine, log a warning and default to False
-        logger.warning(f"Unable to determine verification result from: {content}")
-        return False
+        # Return as string to match parent class return type
+        return "true" if verified else "false"

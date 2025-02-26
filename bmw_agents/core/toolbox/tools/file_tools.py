@@ -267,24 +267,25 @@ def json_write(path: str, data: Any, encoding: str = "utf-8", indent: int = 2) -
 
 def csv_read(
     path: str, has_header: bool = True, delimiter: str = ",", encoding: str = "utf-8"
-) -> List[Dict[str, str]]:
+) -> List[Union[Dict[str, str], List[str]]]:
     """
     Read a CSV file.
 
     Args:
         path: Path to the CSV file
-        has_header: Whether the CSV has a header row
+        has_header: Whether the CSV file has a header row
         delimiter: CSV delimiter
         encoding: File encoding
 
     Returns:
-        List of dictionaries (if has_header is True) or list of lists (if has_header is False)
+        List of dictionaries (if has_header=True) or list of lists (if has_header=False)
     """
     try:
         with open(path, "r", encoding=encoding, newline="") as f:
             if has_header:
-                reader = csv.DictReader(f, delimiter=delimiter)
-                return list(reader)
+                # We need to use Any type here to avoid mypy errors with csv.DictReader
+                reader: Any = csv.DictReader(f, delimiter=delimiter)
+                return [dict(row) for row in reader]  # Convert OrderedDict to dict
             else:
                 reader = csv.reader(f, delimiter=delimiter)
                 return list(reader)
@@ -316,18 +317,33 @@ def csv_write(
     try:
         with open(path, "w", encoding=encoding, newline="") as f:
             # Check if data is a list of dictionaries or a list of lists
-            is_dict_list = all(isinstance(row, dict) for row in data) if data else True
+            is_dict_list = bool(data) and all(isinstance(row, dict) for row in data)
 
             if is_dict_list:
                 if not fieldnames and data:
                     # Try to get fieldnames from the first dict
-                    fieldnames = list(data[0].keys())
-                writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=delimiter)
+                    dict_data = [d for d in data if isinstance(d, dict)]
+                    if dict_data:
+                        fieldnames = list(dict_data[0].keys())
+                
+                # We need to use Any type here to avoid mypy errors with csv.DictWriter
+                writer: Any = csv.DictWriter(f, fieldnames=fieldnames or [], delimiter=delimiter)
                 writer.writeheader()
-                writer.writerows(data)
+                
+                # Only write items that are dictionaries
+                dict_data = [d for d in data if isinstance(d, dict)]
+                writer.writerows(dict_data)
             else:
                 writer = csv.writer(f, delimiter=delimiter)
-                writer.writerows(data)
+                
+                # Convert any dictionaries to lists of values
+                list_data = []
+                for row in data:
+                    if isinstance(row, dict):
+                        list_data.append(list(row.values()))
+                    else:
+                        list_data.append(row)
+                writer.writerows(list_data)
         return True
     except Exception as e:
         logger.error(f"Error writing to CSV file {path}: {str(e)}")
@@ -396,32 +412,32 @@ def create_file_toolbox() -> Toolbox:
     toolbox = Toolbox()
 
     # File operations
-    toolbox.add_tool(SimpleTool(name="file.read", function=file_read))
-    toolbox.add_tool(SimpleTool(name="file.write", function=file_write))
-    toolbox.add_tool(SimpleTool(name="file.exists", function=file_exists))
-    toolbox.add_tool(SimpleTool(name="file.delete", function=file_delete))
-    toolbox.add_tool(SimpleTool(name="file.size", function=file_size))
-    toolbox.add_tool(SimpleTool(name="file.copy", function=file_copy))
-    toolbox.add_tool(SimpleTool(name="file.move", function=file_move))
+    toolbox.add_tool(SimpleTool(name="file.read", function=file_read, description="Read content from a file"))
+    toolbox.add_tool(SimpleTool(name="file.write", function=file_write, description="Write content to a file"))
+    toolbox.add_tool(SimpleTool(name="file.exists", function=file_exists, description="Check if a file exists"))
+    toolbox.add_tool(SimpleTool(name="file.delete", function=file_delete, description="Delete a file"))
+    toolbox.add_tool(SimpleTool(name="file.size", function=file_size, description="Get the size of a file"))
+    toolbox.add_tool(SimpleTool(name="file.copy", function=file_copy, description="Copy a file"))
+    toolbox.add_tool(SimpleTool(name="file.move", function=file_move, description="Move or rename a file"))
 
     # Directory operations
-    toolbox.add_tool(SimpleTool(name="dir.create", function=dir_create))
-    toolbox.add_tool(SimpleTool(name="dir.exists", function=dir_exists))
-    toolbox.add_tool(SimpleTool(name="dir.list", function=dir_list))
-    toolbox.add_tool(SimpleTool(name="dir.delete", function=dir_delete))
+    toolbox.add_tool(SimpleTool(name="dir.create", function=dir_create, description="Create a directory"))
+    toolbox.add_tool(SimpleTool(name="dir.exists", function=dir_exists, description="Check if a directory exists"))
+    toolbox.add_tool(SimpleTool(name="dir.list", function=dir_list, description="List contents of a directory"))
+    toolbox.add_tool(SimpleTool(name="dir.delete", function=dir_delete, description="Delete a directory"))
 
     # JSON operations
-    toolbox.add_tool(SimpleTool(name="json.read", function=json_read))
-    toolbox.add_tool(SimpleTool(name="json.write", function=json_write))
+    toolbox.add_tool(SimpleTool(name="json.read", function=json_read, description="Read and parse a JSON file"))
+    toolbox.add_tool(SimpleTool(name="json.write", function=json_write, description="Write data to a JSON file"))
 
     # CSV operations
-    toolbox.add_tool(SimpleTool(name="csv.read", function=csv_read))
-    toolbox.add_tool(SimpleTool(name="csv.write", function=csv_write))
+    toolbox.add_tool(SimpleTool(name="csv.read", function=csv_read, description="Read a CSV file"))
+    toolbox.add_tool(SimpleTool(name="csv.write", function=csv_write, description="Write data to a CSV file"))
 
     # Path operations
-    toolbox.add_tool(SimpleTool(name="path.join", function=path_join))
-    toolbox.add_tool(SimpleTool(name="path.absolute", function=path_absolute))
-    toolbox.add_tool(SimpleTool(name="path.basename", function=path_basename))
-    toolbox.add_tool(SimpleTool(name="path.dirname", function=path_dirname))
+    toolbox.add_tool(SimpleTool(name="path.join", function=path_join, description="Join path components"))
+    toolbox.add_tool(SimpleTool(name="path.absolute", function=path_absolute, description="Get absolute path"))
+    toolbox.add_tool(SimpleTool(name="path.basename", function=path_basename, description="Get the base name of a path"))
+    toolbox.add_tool(SimpleTool(name="path.dirname", function=path_dirname, description="Get the directory name of a path"))
 
     return toolbox

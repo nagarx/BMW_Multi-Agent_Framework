@@ -154,6 +154,20 @@ class Tool(BaseTool):
         super().__init__(name, description, function)
         self.parameters = self._get_parameters(parameters)
 
+    def _get_parameters(self, parameters: Optional[Dict[str, Dict[str, Any]]]) -> Dict[str, Dict[str, Any]]:
+        """
+        Get parameters from provided dict or from function signature.
+        
+        Args:
+            parameters: Optionally provided parameters
+            
+        Returns:
+            Dictionary of parameter information
+        """
+        if parameters is not None:
+            return parameters
+        return self._get_parameter_info()
+
 
 class SimpleTool(Tool):
     """

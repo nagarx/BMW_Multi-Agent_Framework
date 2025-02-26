@@ -216,8 +216,8 @@ class ToolboxRefiner:
             updated_tool = Tool(
                 name=tool.name,
                 description=new_description,
+                function=tool._function,
                 parameters=tool.parameters,
-                function=tool.function,
             )
             self.refined_toolbox.remove_tool(tool_name)
             self.refined_toolbox.add_tool(updated_tool)
@@ -248,7 +248,7 @@ class ToolboxRefiner:
                 name=tool.name,
                 description=tool.description,
                 parameters=parameters,
-                function=tool.function,
+                function=tool._function,
             )
             self.refined_toolbox.remove_tool(tool_name)
             self.refined_toolbox.add_tool(updated_tool)

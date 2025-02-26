@@ -47,9 +47,9 @@ class TracedReAct(PromptStrategy):
         self.termination_sequence = termination_sequence
 
         # Initialize trace arrays
-        self.thoughts = []
-        self.actions = []
-        self.observations = []
+        self.thoughts: List[str] = []
+        self.actions: List[Dict[str, Any]] = []
+        self.observations: List[str] = []
 
     def get_tool_descriptions(self) -> str:
         """

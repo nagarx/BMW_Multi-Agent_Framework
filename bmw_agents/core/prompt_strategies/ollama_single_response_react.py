@@ -1,14 +1,16 @@
 """
-Ollama-specific implementation of the SingleResponseTracedReAct prompt strategy.
+Ollama-specific single response ReAct prompt strategy for the BMW Agents framework.
 """
 
 import os
-from typing import Any, List, Optional
+import re
+from typing import Any, Dict, List, Optional
 
 from bmw_agents.core.prompt_strategies.react import Tool
 from bmw_agents.core.prompt_strategies.single_response_traced_react import (
     SingleResponseTracedReAct,
 )
+from bmw_agents.core.toolbox.tool import BaseTool
 from bmw_agents.utils.llm_providers import OllamaProvider
 from bmw_agents.utils.logger import get_logger
 
@@ -17,26 +19,26 @@ logger = get_logger("prompt_strategies.ollama_single_response_react")
 
 class OllamaSingleResponseTracedReActPromptStrategy(SingleResponseTracedReAct):
     """
-    Implementation of the SingleResponseTracedReAct strategy optimized for Ollama models.
+    A specialized SingleResponseTracedReAct strategy for Ollama models.
 
-    This strategy adapts the SingleResponseTracedReAct strategy to handle Ollama's specific
-    output format and templating requirements.
+    This strategy is designed to work with Ollama models that have specific
+    output formatting requirements.
     """
 
     def __init__(
         self,
         llm_provider: OllamaProvider,
-        tools: Optional[List[Tool]] = None,
+        tools: Optional[List[BaseTool]] = None,
         template_path: Optional[str] = None,
         termination_sequence: str = "FINAL ANSWER:",
     ) -> None:
         """
-        Initialize the Ollama-specific SingleResponseTracedReAct strategy.
+        Initialize an Ollama-specific single response ReAct prompt strategy.
 
         Args:
-            llm_provider: Ollama provider instance
+            llm_provider: The Ollama LLM provider
             tools: List of tools available to the agent
-            template_path: Path to the prompt template
+            template_path: Path to the template file (default: ollama_react.txt)
             termination_sequence: Sequence indicating the final answer
         """
         super().__init__(

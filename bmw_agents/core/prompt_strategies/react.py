@@ -5,9 +5,9 @@ This module implements the ReAct prompt strategy for iterative LLM calls with to
 
 import json
 import re
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from bmw_agents.core.prompt_strategies.base import PromptStrategy
+from bmw_agents.core.prompt_strategies.base import Message, PromptStrategy
 from bmw_agents.utils.llm_providers import LLMProvider
 from bmw_agents.utils.logger import get_logger
 
@@ -83,7 +83,7 @@ class ReActPromptStrategy(PromptStrategy):
         self.observations: List[str] = []
 
         # Set up message history
-        self.messages: List[Dict[str, str]] = []
+        self.messages: List[Message] = []
 
     def get_tool_descriptions(self) -> str:
         """
@@ -210,7 +210,7 @@ class ReActPromptStrategy(PromptStrategy):
 
         return final_answer or "No final answer was produced."
 
-    def extract_thought_and_action(self, content: str) -> tuple[str, Optional[Dict[str, Any]]]:
+    def extract_thought_and_action(self, content: str) -> Tuple[str, Optional[Dict[str, Any]]]:
         """
         Extract thought and action from the LLM response.
 
