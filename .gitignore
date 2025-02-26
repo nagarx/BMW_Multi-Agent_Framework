@@ -1,0 +1,88 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Unit test and coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*.sublime-workspace
+*.sublime-project
+
+# Documentation
+docs/_build/
+docs/api/
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+*.db
+
+# Project specific
+temp/
+tmp/
+ollama_cache/
+data/
+.env
+.secrets
+
+# API key files or configuration files with secrets
+*secrets*
+*config*.ini
+*config*.json
+*credentials*
+api_keys.txt
+
+# Generated files
+output/
+results/
+
+# OS specific
+.DS_Store
+Thumbs.db 
